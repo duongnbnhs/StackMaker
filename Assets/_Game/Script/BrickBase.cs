@@ -8,12 +8,12 @@ public class BrickBase : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            foreach(Transform child in transform)
+            foreach (Transform child in transform)
             {
-                if (child.name.Equals("dimian"))
+                if (child.name.Equals("dimian") && child.gameObject.activeSelf)
                 {
-                    Debug.Log("Hit at: "+transform.position);
                     child.gameObject.SetActive(false);
+                    Player.Instance.AddBrickStack();
                     break;
                 }
             }

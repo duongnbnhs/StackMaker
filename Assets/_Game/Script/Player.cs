@@ -1,6 +1,8 @@
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Serialization;
 using UnityEngine;
 using static UnityEditor.PlayerSettings;
 
@@ -14,13 +16,20 @@ public enum Direct
 }
 public class Player : MonoBehaviour
 {
+    public static Player Instance;
     [SerializeField] Rigidbody rb;
-    //[SerializeField] private LayerMask brickLayer;
+    [SerializeField] GameObject brick;
+    [SerializeField] Transform character;
+    [SerializeField] Animator anim;
     Vector2 startPoint;
     Vector2 endPoint;
     Direct direct;
     bool isMoving;
-    List<Vector3> wayPoint;
+    public List<GameObject> gameObjects;
+    private void Awake()
+    {
+        Instance = this;
+    }
     private void Start()
     {
         OnInit();
@@ -28,22 +37,21 @@ public class Player : MonoBehaviour
     private void Update()
     {
         Swipe();
+        if (!isMoving) ChangeAnim("stay");
     }
     void OnInit()
     {
         isMoving = false;
-        wayPoint = new List<Vector3>();
+        gameObjects = new List<GameObject>();
     }
     Vector3 GetLastPoint(Vector3 direction)
     {
         int i = 1;
         Vector3 result;
-        wayPoint.Clear();
         while (true)
         {
             if (Physics.Raycast(transform.position + direction * i, Vector3.down))
             {
-                wayPoint.Add(transform.position + direction * i);
                 i++;
             }
             else
@@ -59,7 +67,9 @@ public class Player : MonoBehaviour
     {
         Debug.Log("Move");
         isMoving = true;
-        transform.DOMove(pos,0.75f).OnComplete(() => isMoving = false);
+        transform.DOMove(pos, 0.75f).OnComplete(() => isMoving = false) ;
+
+        ChangeAnim("jump");
     }
     void Swipe()
     {
@@ -118,6 +128,48 @@ public class Player : MonoBehaviour
             }
             Debug.Log(direct);
         }
+    }
+    public void AddBrickStack()
+    {
+        GameObject go = Instantiate(brick);
+        go.transform.parent = transform;
+        if (gameObjects.Count == 0 || gameObjects == null)
+        {
+            Vector3 firstPos = transform.position;
+            firstPos.y = -0.18f;
+            go.transform.position = firstPos;
+            gameObjects.Add(go);
+        }
+        else
+        {
+            Vector3 newBrickPos = gameObjects.Last().gameObject.transform.position;
+            newBrickPos.y += 0.25f;
+            go.transform.position = newBrickPos;
+            gameObjects.Add(go);
+            Vector3 newCharacterPos = character.position;
+            newCharacterPos.y += 0.25f;
+            character.position = newCharacterPos;
+        }
+    }
+    public void RemoveBrickStack()
+    {
+        GameObject go = gameObjects.Last();
+        gameObjects.Remove(go);
+        Destroy(go);
+        Vector3 newCharacterPos = character.position;
+        newCharacterPos.y -= 0.25f;
+        character.position = newCharacterPos;
+    }
+    protected void ChangeAnim(string animName)
+    {
+        /*if (currentAnimName != animName)
+        {
+            anim.ResetTrigger(animName);
+            currentAnimName = animName;
+            anim.SetTrigger(currentAnimName);
+        }*/
+        anim.ResetTrigger(animName);
+        anim.SetTrigger(animName);
     }
 }
 
