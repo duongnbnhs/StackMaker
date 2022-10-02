@@ -2,6 +2,7 @@ using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.PlayerSettings;
 
 public enum Direct
 {
@@ -13,119 +14,52 @@ public enum Direct
 }
 public class Player : MonoBehaviour
 {
-
-
     [SerializeField] Rigidbody rb;
     //[SerializeField] private LayerMask brickLayer;
-    [SerializeField] private float speed = 250;
     Vector2 startPoint;
     Vector2 endPoint;
-    bool isVerticalSwipe;
-    bool isUpValue;
-    public Direct direct;
+    Direct direct;
     bool isMoving;
-    void OnInit()
+    List<Vector3> wayPoint;
+    private void Start()
     {
-
+        OnInit();
     }
     private void Update()
     {
         Swipe();
     }
-    Vector3 LastRightPoint()
+    void OnInit()
     {
-        int i = 1;
-        RaycastHit hit;
-        Vector3 result;
-        while (true)
-        {
-            if (Physics.Raycast(transform.position + Vector3.right * i, Vector3.down, out hit, 10f))
-            {
-                i++;
-                print("hit");
-            }
-            else
-            {
-                result = transform.position + Vector3.right * (i - 1);
-                break;
-            }
-        }
-        Debug.Log("r"+result);
-        return result;
+        isMoving = false;
+        wayPoint = new List<Vector3>();
     }
-    Vector3 LastLeftPoint()
+    Vector3 GetLastPoint(Vector3 direction)
     {
         int i = 1;
-        RaycastHit hit;
         Vector3 result;
+        wayPoint.Clear();
         while (true)
         {
-            if (Physics.Raycast(transform.position + Vector3.left * i, Vector3.down, out hit))
+            if (Physics.Raycast(transform.position + direction * i, Vector3.down))
             {
+                wayPoint.Add(transform.position + direction * i);
                 i++;
             }
             else
             {
-                result = transform.position + Vector3.left * (i - 1);
+                result = transform.position + direction * (i - 1);
                 break;
             }
         }
-        Debug.Log("l"+result);
+        Debug.Log("b" + result);
         return result;
-    }
-    public Vector3 LastForwardPoint()
-    {
-        int i = 1;
-        RaycastHit hit;
-        Vector3 result;
-        while (true)
-        {
-            if (Physics.Raycast(transform.position + Vector3.forward * i, Vector3.down, out hit))
-            {
-                i++;
-            }
-            else
-            {
-                result = transform.position + Vector3.forward * (i - 1);
-                break;
-            }
-        }
-        Debug.Log("f"+result);
-        return result;
-    }
-    Vector3 LastBackwardPoint()
-    {
-        int i = 1;
-        RaycastHit hit;
-        Vector3 result;
-        while (true)
-        {
-            if (Physics.Raycast(transform.position + Vector3.back * i, Vector3.down, out hit))
-            {
-                i++;
-            }
-            else
-            {
-                result = transform.position + Vector3.back * (i - 1);
-                break;
-            }
-        }
-        Debug.Log("b"+result);
-        return result;
-    }
-    bool CheckDirectionSwipe(float offsetX, float offsetY)
-    {
-        return Mathf.Abs(offsetY) > Mathf.Abs(offsetX);
     }
     private void Move(Vector3 pos)
     {
-
-        if (!isMoving)
-        {
-            isMoving = true;
-            transform.DOMove(pos, 0.7f).Complete(isMoving = false);
-        }
-            
+        Debug.Log("Move");
+        isMoving = true;
+        transform.DOMove(pos,0.75f).OnComplete(() => isMoving = false);
     }
     void Swipe()
     {
@@ -138,20 +72,25 @@ public class Player : MonoBehaviour
             endPoint = Input.mousePosition;
             float offsetX = endPoint.x - startPoint.x;
             float offsetY = endPoint.y - startPoint.y;
-            isVerticalSwipe = CheckDirectionSwipe(offsetX, offsetY);
-            if (isVerticalSwipe)
+            if (Mathf.Abs(offsetY) > Mathf.Abs(offsetX))
             {
                 if (offsetY > 0)
                 {
                     //tang gia tri cua z
                     direct = Direct.Forward;
-                    Move(LastForwardPoint());
+                    if (!isMoving)
+                    {
+                        Move(GetLastPoint(Vector3.forward));
+                    }
                 }
                 else
                 {
                     //giam gia tri cua z
                     direct = Direct.Backward;
-                    Move(LastBackwardPoint());
+                    if (!isMoving)
+                    {
+                        Move(GetLastPoint(Vector3.back));
+                    }
                 }
             }
             else
@@ -160,13 +99,21 @@ public class Player : MonoBehaviour
                 {
                     //tang gia tri cua x
                     direct = Direct.Right;
-                    Move(LastRightPoint());
+
+                    if (!isMoving)
+                    {
+                        Move(GetLastPoint(Vector3.right));
+                    }
                 }
                 else
                 {
                     //giam gia tri cua x
                     direct = Direct.Left;
-                    Move(LastLeftPoint());
+
+                    if (!isMoving)
+                    {
+                        Move(GetLastPoint(Vector3.left));
+                    }
                 }
             }
             Debug.Log(direct);
